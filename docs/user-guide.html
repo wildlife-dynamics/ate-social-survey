@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>User Guide — ATE Social Survey Workflow</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="bar">
+      <a class="brand" href="index.html">ATE Social Survey</a>
+      <nav>
+        <a href="index.html">Overview</a>
+        <a href="user-guide.html" class="active">User Guide</a>
+        <a href="technical-guide.html">Technical Guide</a>
+        <a href="troubleshooting.html">Troubleshooting</a>
+        <a href="https://github.com/wildlife-dynamics/ate-social-survey">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <h1>User Guide</h1>
+    <p class="lede">This guide walks you through configuring and running the ATE Social Survey workflow (<code>social_survey</code>). The workflow turns Amboseli Trust for Elephants community questionnaire responses from EarthRanger into a dashboard, sentiment analysis, maps, and a Word report.</p>
+
+    <h2>Overview</h2>
+    <p>The workflow delivers, for a single combined analysis (there is no per-group breakdown):</p>
+    <ul>
+      <li>An <strong>interactive dashboard</strong> with 53 widgets (50 charts and 3 maps)</li>
+      <li><strong>11 pie charts</strong> and <strong>27 bar charts</strong> covering demographics, livestock and land, behaviour, and elephant knowledge</li>
+      <li>A <strong>Likert chart</strong> of 9 agree/disagree attitude statements</li>
+      <li>An <strong>elephant sentiment score</strong> for every respondent, with boxplots, Tukey HSD plots, and scatter plots with an OLS trendline across demographic groups</li>
+      <li><strong>3 maps</strong> of Amboseli: survey locations, respondent gender, and attitude category</li>
+      <li>A <strong>Word report</strong>, <code>social_survey_report.docx</code></li>
+    </ul>
+
+    <h2>Prerequisites</h2>
+    <ul>
+      <li>Access to an <strong>EarthRanger</strong> instance with <code>atequestionnaire_rep</code> events recorded within the analysis period</li>
+      <li>Internet access from the runner. Three Amboseli GeoPackages and the Word template are downloaded from Dropbox during the run, and base map tiles are loaded from ArcGIS Online</li>
+    </ul>
+
+    <h2>1. Add the Workflow Template</h2>
+    <p>In the workflow runner, go to <strong>Workflow Templates</strong> and click <strong>Add Workflow Template</strong>. Paste this repository's URL into the <strong>Github Link</strong> field, then click <strong>Add Template</strong>:</p>
+    <pre><code>https://github.com/wildlife-dynamics/ate-social-survey.git</code></pre>
+    <img src="assets/screenshots/add_workflow.png" alt="Add Workflow Template dialog with the GitHub link field" />
+    <p><em>The card may show "Initializing…" briefly while the environment is set up.</em></p>
+
+    <h2>2. Add an EarthRanger Connection</h2>
+    <p>Navigate to <strong>Data Sources</strong>, click <strong>Connect</strong>, and select <strong>EarthRanger</strong>. Fill in:</p>
+    <ul>
+      <li><strong>Data Source Name</strong>: a label for this connection (e.g. <code>Amboseli Trust for Elephants</code>)</li>
+      <li><strong>EarthRanger URL</strong>: your instance URL (e.g. <code>your-site.pamdas.org</code>)</li>
+      <li><strong>EarthRanger Username</strong> and <strong>Password</strong></li>
+    </ul>
+    <p>Credentials are not validated at setup time. Authentication errors appear only when the workflow runs.</p>
+    <img src="assets/screenshots/er_connection.png" alt="EarthRanger connection form" />
+
+    <h2>3. Select the Workflow</h2>
+    <p>Once added, the template appears in the <strong>Workflow Templates</strong> list. Click the card to open the configuration form.</p>
+    <img src="assets/screenshots/select_workflow.png" alt="Workflow Templates list showing the survey workflow card" />
+
+    <h2 id="config-form">4. Configure the Workflow Form</h2>
+    <p>The form has three sections on a single page. Base maps, map layers, grouping, and the report template are fixed in the workflow, so they don't appear here.</p>
+
+    <h3>Workflow Details</h3>
+    <table>
+      <tr><th>Field</th><th>Description</th></tr>
+      <tr><td>Workflow Name</td><td>A short name to identify this run (required)</td></tr>
+      <tr><td>Workflow Description</td><td>Optional notes (e.g. survey round or site)</td></tr>
+    </table>
+
+    <h3 id="time-range">Time Range</h3>
+    <table>
+      <tr><th>Field</th><th>Description</th></tr>
+      <tr><td>Since</td><td>Start of the analysis period. All <code>atequestionnaire_rep</code> events from this point are fetched</td></tr>
+      <tr><td>Until</td><td>End of the analysis period</td></tr>
+      <tr><td>Timezone</td><td>Local timezone (e.g. <code>Africa/Nairobi UTC+03:00</code>)</td></tr>
+      <tr><td>Time Format <span class="badge">Advanced</span></td><td>How dates are written in the report period (default <code>%d %b %Y %H:%M:%S</code>)</td></tr>
+    </table>
+
+    <h3>Connect to EarthRanger</h3>
+    <p>Select the data source configured in Step 2 from the <strong>Data Source</strong> dropdown.</p>
+    <img src="assets/screenshots/configure_workflow.png" alt="Configuration form with workflow details, time range, and EarthRanger data source" />
+
+    <h2>5. Run</h2>
+    <p>Once all sections are filled in, click <strong>Submit</strong>. The runner will:</p>
+    <ol>
+      <li>Download three Amboseli GeoPackages from Dropbox (land-use zones and conservancies, group-ranch boundaries with the electric fence, and group-ranch boundaries), reproject them to EPSG:4326, and style them as map layers.</li>
+      <li>Fetch <code>atequestionnaire_rep</code> events for the time range (<code>raise_on_empty: true</code>, so the run fails if none are found).</li>
+      <li>Expand the event details into columns and strip the Maa translations from question headings (e.g. <em>What is your Age? (Kaja larin liata?)</em> becomes <em>What is your Age</em>).</li>
+      <li>Exclude invalid records: serial number <code>46283</code>, respondents aged 18 or under, and single-person households.</li>
+      <li>Fill missing values (<code>0</code> for numeric answers, <code>No Response</code> for text) and convert numeric columns to integers.</li>
+      <li>Map raw answers to clean labels (Yes/No, True/False, Agree/Disagree, gender, age group, education, feelings about wildlife, how often elephants are seen, marital status).</li>
+      <li>Draw 11 pie charts. Group numeric answers into 5 natural-breaks bins and draw 9 bar charts, then draw 10 Yes/No and 8 True/False bar charts.</li>
+      <li>Build the demographic summary table (gender, age, tribe, household size, education).</li>
+      <li>Draw the Likert chart and score each respondent's sentiment. Each of the 9 statements scores 1–5 with negative statements reversed; the mean is then put into 5 categories from <em>Strongly Disagree</em> to <em>Strongly Agree</em>.</li>
+      <li>Draw boxplots, Tukey HSD plots (with <code>No Response</code> excluded), and scatter plots with an OLS trendline of sentiment across demographic groups.</li>
+      <li>Render the 3 maps and convert all 50 charts and 3 maps to PNG.</li>
+      <li>Download the Word template and fill it with the PNGs, the demographic table, and the report period.</li>
+      <li>Assemble the dashboard and write everything to <code>ECOSCOPE_WORKFLOWS_RESULTS</code>.</li>
+    </ol>
+
+    <h2 id="outputs">Output Files</h2>
+    <p>All outputs are written to <code>$ECOSCOPE_WORKFLOWS_RESULTS/</code>. Every chart and map is saved as <code>.html</code> plus a <code>.png</code> with the same name.</p>
+
+    <h3>Data &amp; Report</h3>
+    <table>
+      <tr><th>File</th><th>Description</th></tr>
+      <tr><td><code>survey-events.gpkg</code></td><td>Cleaned survey responses, one point per respondent</td></tr>
+      <tr><td><code>demographic-data.parquet</code></td><td>Demographic summary table (also used in the Word report)</td></tr>
+      <tr><td><code>elephant-sentiment-table.gpkg</code></td><td>Statement scores, <code>sentiment_score</code>, <code>sentiment_score_mean</code>, and <code>sentiment_bins</code></td></tr>
+      <tr><td><code>social_survey_report.docx</code></td><td>Final Word report</td></tr>
+    </table>
+
+    <h3>Pie Charts (11)</h3>
+    <table>
+      <tr><th>File</th><th>Question</th></tr>
+      <tr><td><code>what_is_your_age_group_pie_chart</code></td><td>Age group</td></tr>
+      <tr><td><code>what_is_the_land_arrangement_pie_chart</code></td><td>Arrangement for the land farmed on</td></tr>
+      <tr><td><code>highest_level_of_education_pie_chart</code></td><td>Highest completed education</td></tr>
+      <tr><td><code>what_is_your_tribe_pie_chart</code></td><td>Tribe</td></tr>
+      <tr><td><code>greatest_threat_to_crop_production_pie_chart</code></td><td>Greatest threat to crop production</td></tr>
+      <tr><td><code>greatest_threat_to_livestock_pie_chart</code></td><td>Greatest threat to livestock</td></tr>
+      <tr><td><code>what_is_your_marital_status_pie_chart</code></td><td>Marital status</td></tr>
+      <tr><td><code>overall_feeling_about_wildlife_pie_chart</code></td><td>Overall feelings about wildlife</td></tr>
+      <tr><td><code>how_often_have_you_seen_elephants_in_the_last_year_pie_chart</code></td><td>How often elephants were seen in the last year</td></tr>
+      <tr><td><code>how_do_you_feel_witnessing_elephant_harmed_pie_chart</code></td><td>Feeling on hearing of or witnessing an elephant speared/poisoned</td></tr>
+      <tr><td><code>gender_of_participant_pie_chart</code></td><td>Gender</td></tr>
+    </table>
+
+    <h3>Bar Charts: Binned Numeric Answers (9)</h3>
+    <p><code>age_bins_bar_chart</code>, <code>other_people_bins_bar_chart</code> (household size), <code>cattle_bins_bar_chart</code>, <code>dog_bins_bar_chart</code>, <code>donkey_bins_bar_chart</code>, <code>sheep_goats_bins_bar_chart</code>, <code>other_animal_bins_bar_chart</code>, <code>land_grown_crops_bins_bar_chart</code>, <code>land_owned_bins_bar_chart</code>. Households with zero dogs or zero donkeys are left out of those two charts.</p>
+
+    <h3>Bar Charts: Yes/No Questions (10)</h3>
+    <table>
+      <tr><th>File</th><th>Question</th></tr>
+      <tr><td><code>do_you_benefit_from_electric_fence_bar_chart</code></td><td>Benefit from the KCCDT Big Life electric fence</td></tr>
+      <tr><td><code>activities_altered_elephant_presence_bar_chart</code></td><td>Choose routes/schedules/water fetching based on elephant presence</td></tr>
+      <tr><td><code>protect_water_from_elephants_bar_chart</code></td><td>Protect water sources from elephants</td></tr>
+      <tr><td><code>more_eles_past_bar_chart</code></td><td>See more elephants now than in the past</td></tr>
+      <tr><td><code>family_protection_eles_bar_chart</code></td><td>Use measures to prevent crop damage by elephants</td></tr>
+      <tr><td><code>ffamily_protection_eles_livestock_bar_chart</code></td><td>Use measures to prevent injury to livestock</td></tr>
+      <tr><td><code>illness_wild_bar_chart</code></td><td>Noticed signs of illness in wild animals</td></tr>
+      <tr><td><code>elephant_harmed_bar_chart</code></td><td>Involved in or witnessed an elephant being harmed</td></tr>
+      <tr><td><code>report_elephant_conflict_bar_chart</code></td><td>Report elephant conflict</td></tr>
+      <tr><td><code>elephant_community_dialogue_bar_chart</code></td><td>Interested in a future community dialogue</td></tr>
+    </table>
+
+    <h3>Bar Charts: True/False Knowledge Questions (8)</h3>
+    <p><code>male_elephant_secretion_bar_chart</code>, <code>elephant_human_awareness_bar_chart</code>, <code>elephant_shake_head_bar_chart</code>, <code>elephant_smell_far_away_bar_chart</code>, <code>elephants_move_seasonally_bar_chart</code>, <code>female_elephants_protective_bar_chart</code>, <code>female_elephants_family_groups_bar_chart</code>, <code>witness_elephant_harm_bar_chart</code></p>
+
+    <h3>Sentiment &amp; Statistics</h3>
+    <table>
+      <tr><th>File</th><th>Description</th></tr>
+      <tr><td><code>ele_sentiment_chart</code></td><td>Likert chart of the 9 agree/disagree statements</td></tr>
+      <tr><td><code>gender_boxplot_chart</code>, <code>age_group_boxplot_chart</code>, <code>education_level_boxplot_chart</code>, <code>tribe_boxplot_chart</code>, <code>marital_status_boxplot_chart</code></td><td>Sentiment distribution by group</td></tr>
+      <tr><td><code>gender_tukey_chart</code>, <code>marital_status_tukey_chart</code>, <code>age_group_tukey_chart</code>, <code>education_tukey_chart</code></td><td>Tukey HSD pairwise comparisons (95% confidence)</td></tr>
+      <tr><td><code>household_sentiment_scatter_chart</code>, <code>age_sentiment_scatter_chart</code></td><td>Sentiment against household size and age, with an OLS trendline</td></tr>
+    </table>
+
+    <h3>Maps</h3>
+    <table>
+      <tr><th>File</th><th>Description</th></tr>
+      <tr><td><code>survey_event_map</code></td><td>All survey locations</td></tr>
+      <tr><td><code>gender_event_map</code></td><td>Survey points coloured by gender</td></tr>
+      <tr><td><code>sentiment_event_map</code></td><td>Survey points coloured by attitude category</td></tr>
+    </table>
+  </main>
+
+  <footer class="site-footer">
+    <p>ATE Social Survey Workflow &middot; <a href="https://github.com/wildlife-dynamics/ate-social-survey">wildlife-dynamics/ate-social-survey</a> on GitHub</p>
+  </footer>
+</body>
+</html>

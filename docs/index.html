@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ATE Social Survey Workflow</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="bar">
+      <a class="brand" href="index.html">ATE Social Survey</a>
+      <nav>
+        <a href="index.html" class="active">Overview</a>
+        <a href="user-guide.html">User Guide</a>
+        <a href="technical-guide.html">Technical Guide</a>
+        <a href="troubleshooting.html">Troubleshooting</a>
+        <a href="https://github.com/wildlife-dynamics/ate-social-survey">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <h1>ATE Social Survey Workflow</h1>
+    <p class="lede">Processes Amboseli Trust for Elephants community questionnaire responses from EarthRanger into an interactive dashboard of attitude, knowledge, and demographic charts, elephant sentiment scores with statistical comparisons, maps of Amboseli, and a Word report.</p>
+
+    <div class="card-grid">
+      <a class="card" href="user-guide.html">
+        <h3>User Guide</h3>
+        <p>Step-by-step instructions for adding, configuring, and running the workflow, plus every output file.</p>
+      </a>
+      <a class="card" href="technical-guide.html">
+        <h3>Technical Guide</h3>
+        <p>How the workflow works inside: data cleaning, answer relabelling, sentiment scoring, statistics, maps, and report assembly.</p>
+      </a>
+      <a class="card" href="troubleshooting.html">
+        <h3>Troubleshooting</h3>
+        <p>Common errors you may hit while configuring or running the workflow, and how to resolve them.</p>
+      </a>
+    </div>
+
+    <h2>What it produces</h2>
+    <ul>
+      <li>An <strong>interactive dashboard</strong> with 53 widgets</li>
+      <li><strong>11 pie charts</strong> covering demographics, threats to crops and livestock, feelings about wildlife, and elephant encounters</li>
+      <li><strong>27 bar charts</strong>: 9 binned numeric answers (age, household size, livestock, land), 10 Yes/No behaviour questions, and 8 True/False knowledge questions</li>
+      <li>A <strong>Likert chart</strong> of 9 agree/disagree attitude statements</li>
+      <li>A per-respondent <strong>elephant sentiment score</strong> from 1 to 5, grouped into five attitude categories</li>
+      <li><strong>5 boxplots, 4 Tukey HSD plots, and 2 scatter plots with an OLS trendline</strong> comparing sentiment across demographic groups</li>
+      <li><strong>3 maps</strong> (survey locations, gender, and attitude category) over Amboseli land-use zones, group-ranch boundaries, and the electric fence</li>
+      <li>A <strong>Word report</strong> (<code>social_survey_report.docx</code>) containing every chart and the demographic summary table</li>
+    </ul>
+
+    <h2>Requirements</h2>
+    <ul>
+      <li>Access to an <strong>EarthRanger</strong> instance with <code>atequestionnaire_rep</code> events recorded in the analysis period</li>
+      <li>Internet access from the runner. Map layers and the report template are downloaded from Dropbox, and base map tiles come from ArcGIS Online</li>
+    </ul>
+    <p>The form only asks for workflow details, a time range, and an EarthRanger connection. Base maps, map layers, and the report template are fixed. Grouping is also fixed to none, so every output covers the whole dataset as one view.</p>
+
+    <h2>Get started</h2>
+    <p>New to the workflow? Start with the <a href="user-guide.html">User Guide</a>. Running into an error? Check <a href="troubleshooting.html">Troubleshooting</a> first.</p>
+  </main>
+
+  <footer class="site-footer">
+    <p>ATE Social Survey Workflow &middot; <a href="https://github.com/wildlife-dynamics/ate-social-survey">wildlife-dynamics/ate-social-survey</a> on GitHub</p>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Technical Guide — ATE Social Survey Workflow</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="bar">
+      <a class="brand" href="index.html">ATE Social Survey</a>
+      <nav>
+        <a href="index.html">Overview</a>
+        <a href="user-guide.html">User Guide</a>
+        <a href="technical-guide.html" class="active">Technical Guide</a>
+        <a href="troubleshooting.html">Troubleshooting</a>
+        <a href="https://github.com/wildlife-dynamics/ate-social-survey">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <h1>Technical Guide</h1>
+    <p class="lede">How the ATE Social Survey Workflow is built: EarthRanger ingestion, answer cleaning and relabelling, binning, sentiment scoring, statistical comparisons, maps, PNG conversion, and assembly of the Word report and dashboard.</p>
+
+    <p>
+      <a href="assets/ate_survey_technical_guide.pdf">Download the full Technical Guide (PDF)</a>
+    </p>
+    <p>This guide was written directly from <code>spec.yaml</code>. Three behaviours are worth knowing up front:</p>
+    <ul>
+      <li><strong>Grouping is fixed to none</strong> (<code>groupers: []</code>), so every output covers the whole dataset.</li>
+      <li>The event fetch uses <code>raise_on_empty: true</code>, so a time range with no survey events fails the run.</li>
+      <li>The sentiment score counts <em>I Don't Know</em> and <em>No Response</em> as 0, and those zeros are included in each respondent's mean.</li>
+    </ul>
+
+    <h2>Contents</h2>
+    <ol>
+      <li>Overview</li>
+      <li>Dependencies &amp; Configuration
+        <ol type="a">
+          <li>User-configurable Form</li>
+          <li>Groupers</li>
+          <li>Base Maps</li>
+          <li>Files Downloaded at Runtime</li>
+        </ol>
+      </li>
+      <li>Survey Data Pipeline
+        <ol type="a">
+          <li>Event Retrieval</li>
+          <li>Flattening &amp; Renaming</li>
+          <li>Record Exclusion</li>
+          <li>Missing Values &amp; Type Conversion</li>
+          <li>Answer Relabelling</li>
+        </ol>
+      </li>
+      <li>Pie Charts</li>
+      <li>Binning &amp; Bar Charts</li>
+      <li>Demographic Table</li>
+      <li>Likert Chart &amp; Elephant Sentiment Score</li>
+      <li>Statistical Comparisons
+        <ol type="a">
+          <li>Boxplots</li>
+          <li>Tukey HSD</li>
+          <li>Scatter Plots with OLS Trendline</li>
+        </ol>
+      </li>
+      <li>Maps</li>
+      <li>PNG Conversion, Word Report &amp; Dashboard</li>
+      <li>Output Files</li>
+      <li>Workflow Execution Logic</li>
+      <li>Software Versions</li>
+    </ol>
+
+    <h2 id="sentiment">Sentiment scoring at a glance</h2>
+    <table>
+      <tr><th>Answer</th><th>Negative statements (6)</th><th>Positive statements (3)</th></tr>
+      <tr><td>Strongly Disagree</td><td>5</td><td>1</td></tr>
+      <tr><td>Disagree</td><td>4</td><td>2</td></tr>
+      <tr><td>Neutral</td><td>3</td><td>3</td></tr>
+      <tr><td>Agree</td><td>2</td><td>4</td></tr>
+      <tr><td>Strongly Agree</td><td>1</td><td>5</td></tr>
+      <tr><td>I Don't Know / No Response</td><td>0</td><td>0</td></tr>
+    </table>
+    <p>The workflow takes the mean of the 9 scores, rounds it to 1 decimal place, groups it into 5 equal-interval bins, and maps the bins <code>0 - 1</code> … <code>4 - 5</code> to <em>Strongly Disagree</em> … <em>Strongly Agree</em>. Higher scores mean a more positive attitude towards elephants.</p>
+
+    <h2>Read it here</h2>
+    <p>The guide is embedded below. If it doesn't render in your browser, use the download link above.</p>
+    <embed src="assets/ate_survey_technical_guide.pdf" type="application/pdf" width="100%" height="900px" style="border: 1px solid #d8e8d8; border-radius: 6px;" />
+  </main>
+
+  <footer class="site-footer">
+    <p>ATE Social Survey Workflow &middot; <a href="https://github.com/wildlife-dynamics/ate-social-survey">wildlife-dynamics/ate-social-survey</a> on GitHub</p>
+  </footer>
+</body>
+</html>

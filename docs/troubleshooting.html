@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Troubleshooting — ATE Social Survey Workflow</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="bar">
+      <a class="brand" href="index.html">ATE Social Survey</a>
+      <nav>
+        <a href="index.html">Overview</a>
+        <a href="user-guide.html">User Guide</a>
+        <a href="technical-guide.html">Technical Guide</a>
+        <a href="troubleshooting.html" class="active">Troubleshooting</a>
+        <a href="https://github.com/wildlife-dynamics/ate-social-survey">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <h1>Troubleshooting</h1>
+    <p class="lede">Common issues encountered while configuring, running, or contributing to the ATE Social Survey Workflow, and how to resolve them. If your issue isn't listed here, open an issue on <a href="https://github.com/wildlife-dynamics/ate-social-survey/issues">GitHub</a>.</p>
+
+    <h2>Configuration &amp; EarthRanger Connection</h2>
+
+    <div class="error-block">
+      <p class="symptom">The run fails straight away with no events returned</p>
+      <p><code>get_events</code> fetches only <code>atequestionnaire_rep</code> events and uses <code>raise_on_empty: true</code>. If no survey events fall within the selected <a href="user-guide.html#time-range">time range</a>, the run stops instead of producing an empty dashboard. Widen the time range, and check that the EarthRanger account you connected can see that event type.</p>
+    </div>
+
+    <div class="error-block">
+      <p class="symptom">Authentication or connection errors at run time</p>
+      <p>EarthRanger credentials aren't checked when you save the data source, only when the workflow runs. Re-enter the URL, username, and password under <strong>Data Sources</strong>.</p>
+    </div>
+
+    <div class="error-block">
+      <p class="symptom">Download errors for <code>.gpkg</code> or <code>.docx</code> files</p>
+      <p>The Amboseli map layers and the Word template are downloaded from Dropbox during each run (3 retries). The runner needs internet access, and the Dropbox links in <code>spec.yaml</code> must still be shared publicly. If a link has been revoked, upload the file again and update the <code>url</code> in the matching <code>fetch_and_persist_file</code> task.</p>
+    </div>
+
+    <div class="error-block">
+      <p class="symptom">No grouping, base map, or map layer options in the form</p>
+      <p>This is expected. Groupers are fixed to <code>[]</code>, and the base maps, Amboseli layers, and report template are all set in <code>spec.yaml</code>. The form only asks for workflow details, a time range, and an EarthRanger connection.</p>
+    </div>
+
+    <h2>Survey Data &amp; Charts</h2>
+
+    <div class="error-block">
+      <p class="symptom">Fewer respondents than expected</p>
+      <p>Three filters run before any charting: serial number <code>46283</code> is dropped, only respondents <strong>older than 18</strong> are kept (<code>gt 18</code>, so 18-year-olds are excluded), and only households with <strong>more than one person</strong> are kept. These filters run before missing values are filled, so rows with a blank age or household size are dropped too.</p>
+    </div>
+
+    <div class="error-block">
+      <p class="symptom">A chart, its PNG, or its dashboard widget is missing</p>
+      <p>Every task skips if its input is empty (<code>any_is_empty_df</code>) or an upstream task was skipped (<code>any_dependency_skipped</code>). Common causes:</p>
+      <ul>
+        <li><strong>Renamed questions.</strong> If a question heading changes in EarthRanger, the rename in <code>map_survey_columns</code> no longer matches (it uses <code>raise_if_not_found: false</code>, so there's no error). The chart that expects the English column name is then skipped. Update the rename map.</li>
+        <li><strong>No dogs or no donkeys.</strong> Households with 0 dogs or 0 donkeys are filtered out of those two charts, so the chart is skipped if nobody in the period owns one.</li>
+      </ul>
+    </div>
+
+    <div class="error-block">
+      <p class="symptom">Dog or donkey bar chart labels look wrong</p>
+      <p>Those two charts use hard-coded bin labels (<code>0, 0 - 1, 1 - 2, 2 - 4, 4 - 8</code> for dogs; <code>0, 0 - 3, 3 - 7, 7 - 25, 25 - 56</code> for donkeys) that were set from an earlier data distribution. The natural-breaks bins are recalculated on every run, so with new data the labels may no longer match the real ranges. Update the <code>labels</code> in <code>dog_bins</code> / <code>donkey_bins</code>, or switch them to <code>label_ranges: true</code>.</p>
+    </div>
+
+    <div class="error-block">
+      <p class="symptom">Marital status shows unexpected categories or "No Response"</p>
+      <p>Marital status is typed as free text. <code>replace_marital_status</code> maps about 90 known spellings (English and Maa) to <em>Married</em>, <em>Single</em>, or <em>Divorced</em>. Any new spelling passes through unchanged and appears as its own category. Add it to the <code>value_map</code>. Widowed is mapped to Single and Separated to Married, and both are judgment calls you may want to revisit.</p>
+    </div>
+
+    <h2>Sentiment &amp; Statistics</h2>
+
+    <div class="error-block">
+      <p class="symptom">Sentiment scores look lower than the answers suggest</p>
+      <p><em>I Don't Know</em> and <em>No Response</em> score <strong>0</strong> and are included in the mean of the 9 statements. A respondent who skips several statements is pulled towards the negative end of the scale. See the <a href="technical-guide.html#sentiment">scoring table</a>.</p>
+    </div>
+
+    <div class="error-block">
+      <p class="symptom">Attitude map points are grey, or the legend shows ranges like "1 - 2" instead of labels</p>
+      <p>Sentiment bins use <code>equal_interval</code> with k = 5, fitted to the <em>observed</em> range of scores. The bins are then renamed only if their labels come out exactly as <code>0 - 1</code>, <code>1 - 2</code>, <code>2 - 3</code>, <code>3 - 4</code>, <code>4 - 5</code>. When the observed range is narrower (for example 1.4–4.6), the labels differ, stay unmapped, and are drawn in the default grey <code>#cfcfc4</code>. Fixed bin edges of 0–5 would avoid this.</p>
+    </div>
+
+    <div class="error-block">
+      <p class="symptom">A Tukey plot is missing or errors</p>
+      <p>Tukey HSD needs at least two groups with more than one respondent each, after <code>No Response</code> is removed. With a short time range, a factor such as marital status or education may have too few respondents in some groups. Widen the time range.</p>
+    </div>
+
+    <div class="error-block">
+      <p class="symptom">Where is <code>anova_results.csv</code>?</p>
+      <p>The ANOVA step from the previous version of this workflow has been removed. Sentiment is now compared with boxplots, Tukey HSD plots, and scatter plots with an OLS trendline.</p>
+    </div>
+
+    <h2>Maps, PNGs &amp; Word Report</h2>
+
+    <div class="error-block">
+      <p class="symptom">Map PNGs are blank or missing base map tiles</p>
+      <p>Map screenshots wait 40 seconds for ArcGIS tiles to load. On a slow connection this may not be enough. Increase <code>wait_for_timeout</code> in the three <code>convert_*_map_png</code> tasks.</p>
+    </div>
+
+    <div class="error-block">
+      <p class="symptom">The Word report is missing some or all charts</p>
+      <p><code>generate_survey_report</code> embeds whatever PNGs are in the results folder when it runs. It doesn't wait for the PNG conversion tasks, which aren't its inputs in the task graph. In a parallel (async) run, the report can therefore be built before the PNGs exist. Run sequentially, or make <code>generate_survey_doc</code> depend on the <code>convert_*_png</code> tasks. The report also matches images by file name (e.g. <code>{{ gender_of_participant_pie_chart }}</code>), so renaming a chart's <code>filename</code> in <code>spec.yaml</code> leaves an empty slot in the template.</p>
+    </div>
+
+    <div class="error-block">
+      <p class="symptom">The report's demographic table is empty</p>
+      <p>The report looks for <code>demographic-data.parquet</code> (or <code>.csv</code>) in the results folder. If <code>persist_demo_table</code> was skipped or its filename was changed, the table is left empty.</p>
+    </div>
+
+    <h2>Contributing &amp; CI</h2>
+    <p>These apply if you're modifying the workflow itself (<code>spec.yaml</code> or the generated <code>ecoscope-workflows-social-survey-workflow/</code> directory) and opening a pull request.</p>
+
+    <div class="error-block">
+      <p class="symptom">Tests fail on <code>test-cases.yaml</code> parameters</p>
+      <p>The current <code>test-cases.yaml</code> is still the template placeholder: it passes a <code>calculator</code> parameter and sets groupers, but this workflow has neither and needs an EarthRanger connection. Replace it with at least one real case that sets <code>workflow_details</code>, <code>time_range</code>, and <code>er_client_name</code>.</p>
+    </div>
+
+    <div class="error-block">
+      <p class="symptom"><code>Found wildcard version (*) in requirements</code> or <code>Found local file channel (file://) in requirements</code></p>
+      <p>Every dependency under <code>requirements</code> in <code>spec.yaml</code> must pin a version (or range) and use a remote conda channel. Wildcard versions and local <code>file://</code> channels only work for local development.</p>
+    </div>
+
+    <div class="error-block">
+      <p class="symptom"><code>VERSION.yaml (...) must be greater than main branch (...)</code></p>
+      <p>Bump <code>MAJ</code>/<code>MIN</code>/<code>PATCH</code> in <code>ecoscope-workflows-social-survey-workflow/VERSION.yaml</code> so it's strictly greater than the version on <code>main</code>.</p>
+    </div>
+
+    <div class="error-block">
+      <p class="symptom">Generated workflow directory differs from <code>spec.yaml</code></p>
+      <p>Recompile with wt-compiler and commit the result:</p>
+      <pre><code>pixi run --manifest-path pixi.toml --locked bash -c "./dev/recompile.sh --update"</code></pre>
+    </div>
+
+    <div class="error-block">
+      <p class="symptom">No outputs written / can't find results</p>
+      <p>All outputs go to the directory in the <code>ECOSCOPE_WORKFLOWS_RESULTS</code> environment variable. Confirm it's set and that the workflow process can write to it.</p>
+    </div>
+
+    <div class="error-block">
+      <p class="symptom">The technical guide PDF is out of date</p>
+      <p>Regenerate it after changing <code>spec.yaml</code> (requires <code>reportlab</code>). The script writes the PDF to <code>technical_guide/</code> and to <code>docs/assets/</code>:</p>
+      <pre><code>python3 technical_guide/generate_technical_guide.py</code></pre>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <p>ATE Social Survey Workflow &middot; <a href="https://github.com/wildlife-dynamics/ate-social-survey">wildlife-dynamics/ate-social-survey</a> on GitHub</p>
+  </footer>
+</body>
+</html>
