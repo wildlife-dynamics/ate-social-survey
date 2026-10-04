@@ -1,21 +1,10 @@
-name:  # Title Case, e.g. "My Ecoscope Workflow Template"
-
-# at least one author is required
+name: ATE Social Survey
 author:
-  - name: ""
-    organization: ""
-    email: ""
+  - name: Tevin Temu
+    organization: Wildlife Dynamics
+    email: tevin@wildlifedynamics.com
 
-description: # A short description
-
-# todo: add example
-theory: "" # optional
-
-# todo: add example
-output_comment: "" # optional
-
-# optional
-# example
-# citation: 
-#   - Wu, Y. et al. (2025). "Monitoring elephant spatial patterns with Ecoscope workflows."
-citation: [] 
+description: Processes Amboseli Trust for Elephants community questionnaire responses from EarthRanger and produces an interactive dashboard of demographic, attitude, and elephant-knowledge charts, per-respondent elephant sentiment scores with statistical comparisons across groups, maps of Amboseli, and a Word report.
+theory: "Each respondent's elephant sentiment score is the mean of 9 agree/disagree statements scored on a 1-5 Likert scale, with negatively worded statements reverse-scored, and is then binned into 5 attitude categories from Strongly Disagree to Strongly Agree. Differences in sentiment between demographic groups (gender, age group, education, marital status) are tested with Tukey HSD pairwise comparisons at 95% confidence, and relationships with household size and age are shown with an OLS trendline. Numeric answers such as herd sizes and land area are grouped into 5 natural-breaks classes."
+output_comment: "Outputs a 53-widget dashboard with pie, bar, Likert, boxplot, Tukey HSD, and scatter charts, plus survey-location, gender, and attitude-category maps over Amboseli land-use zones, group-ranch boundaries, and the electric fence. Also writes the cleaned survey responses and per-respondent sentiment table (GeoPackage), a demographic summary table (Parquet), HTML and PNG copies of every chart and map, and a Word report (social_survey_report.docx)."
+citation: []
